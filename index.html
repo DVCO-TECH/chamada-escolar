@@ -3,118 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chamada Escolar Digital</title>
+    <title>Sistema de Chamada Multi-Turmas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; padding-bottom: 50px; }
-        .aluno-card { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: white; 
-            padding: 15px; 
-            margin-bottom: 10px; 
-            border-radius: 10px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .btn-check:checked + .btn-outline-success { background-color: #198754; color: white; }
-        .btn-check:checked + .btn-outline-danger { background-color: #dc3545; color: white; }
+        body { background-color: #f0f2f5; padding-bottom: 50px; }
+        .card-chamada { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .aluno-linha { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .turma-badge { font-size: 1.2rem; font-weight: bold; color: #0d6efd; }
     </style>
 </head>
 <body>
 
 <div class="container mt-4">
-    <h2 class="text-center mb-4">Diário de Classe</h2>
-    <div class="text-center mb-3">
-        <span id="data-atual" class="badge bg-secondary p-2"></span>
-    </div>
-
-    <div id="lista-alunos">
+    <div class="card-chamada">
+        <h2 class="text-center">Chamada Escolar</h2>
+        
+        <div class="mb-4">
+            <label class="form-label fw-bold">Selecione a Turma:</label>
+            <select id="seletor-turma" class="form-select form-select-lg" onchange="trocarTurma()">
+                <option value="">-- Escolha uma sala --</option>
+                <optgroup label="Ensino Médio">
+                    <option value="1A">1A</option><option value="1B">1B</option><option value="1C">1C</option><option value="1D">1D</option>
+                    <option value="2A">2A</option><option value="2B">2B</option><option value="2C">2C</option>
+                    <option value="3A">3A</option><option value="3B">3B</option><option value="3C">3C</option>
+                </optgroup>
+                <optgroup label="Ensino Fundamental">
+                    <option value="6A">6A</option><option value="6B">6B</option><option value="6C">6C</option>
+                    <option value="7A">7A</option><option value="7B">7B</option>
+                    <option value="8A">8A</option><option value="8B">8B</option>
+                    <option value="9A">9A</option><option value="9B">9B</option><option value="9C">9C</option>
+                </optgroup>
+            </select>
         </div>
 
-    <div class="d-grid gap-2 mt-4">
-        <button class="btn btn-primary btn-lg" onclick="salvarChamada()">Finalizar Chamada</button>
-        <button class="btn btn-info" onclick="verRelatorio()">Ver Total de Faltas</button>
+        <div id="area-chamada" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="turma-badge" id="titulo-turma"></span>
+                <span id="data-hoje" class="text-muted"></span>
+            </div>
+            
+            <div id="lista-alunos"></div>
+
+            <div class="d-grid gap-2 mt-4">
+                <button class="btn btn-success btn-lg" onclick="salvarChamada()">Salvar Chamada de Hoje</button>
+                <button class="btn btn-outline-primary" onclick="exportarCSV()">Exportar Histórico (Excel)</button>
+                <button class="btn btn-outline-danger btn-sm mt-3" onclick="limparDados()">Limpar Tudo</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // 1. Lista de Alunos (Você pode editar os nomes aqui)
-    const alunos = [
-        "Ana Clara",
-        "Bruno Henrique",
-        "Carlos Eduardo",
-        "Daniela Souza",
-        "Erik Oliveira"
-    ];
+    // Configuração das listas de alunos por sala
+    const bancoDeDadosAlunos = {
+        "1A": [
+    "AGATHA SOUZA MATOS",
+    "ANA JULIA CONCEIÇÃO SALES",
+    "ANA LIVIA SABINO SANTOS",
+    "ANNA CLARA BARBOSA MANOEL",
+    "BEATRIZ CALDANI COELHO",
+    "CAUÃ RARES DI DONATO RIBEIRO",
+    "DIEGO APARECIDO RODRIGUES PINTO",
+    "EDUARDA DE SOUZA FERREIRA",
+    "ELISA DA SILVA PAIXAO",
+    "ENZO RIBEIRO NAGAI",
+    "GABRIELLY VITORIA DOS SANTOS PEREIRA",
+    "ISABELLY VITORIA RIBEIRO DE MIRANDA",
+    "ITALO MIGUEL DE JESUS PRADO",
+    "JOAO VITOR DE LIMA MACEDO",
+    "JULIO CESAR SANTOS DO NASCIMENTO",
+    "KAIQUE GUSTAVO RODRIGUES CARAÇA",
+    "KAUAN VICENT FRANCO CAVINATTI",
+    "KEYMILLY GABRIELLE RODRIGUES DA COSTA",
+    "KIMBERLY ALVES MENINO",
+    "LARA FERNANDES SANTOS",
+    "LUIS EDUARDO LEOCADIO SILVA",
+    "LUIZ MIGUEL SANTOS MARIANO BARBOSA",
+    "MANUELLA MELO DE SOUZA",
+    "MANUELLY VITÓRIA NUNES CARAÇA",
+    "MICHAELA LAVÍNIA MENEZES DE SOUSA",
+    "MICHEL PIRES FERREIRA",
+    "MIKAELLY MILLIAN DE JESUS BOM SUCESSO DE MORAES",
+    "MONIK VITÓRIA CASSUTI FERREIRA",
+    "NAYARA SOUZA PINHEIRO",
+    "NICOLE HADASSA SANTOS ROSEMBERG",
+    "NICOLLAS RAPHAEL DE SOUZA",
+    "RAQUEL DOS SANTOS",
+    "ROSÂNGELA FERREIRA DE OLIVEIRA",
+    "SOPHIA MIYUKI DA SILVA CARAÇA MISHIMA",
+    "SURIH ALVES GONÇALVES ANTONIO",
+    "THAYLA LAVINIA QUEIROZ ALVES",
+    "VICTOR GABRIEL RODRIGUES",
+    "VINICIUS HENRIQUE SILVA DA CUNHA",
+    "VITOR DOS SANTOS MARIANO",
+    "YAGO RODRIGUES DA SILVA"
+],
+        "1B": ["Daniela Oliveira", "Eduardo Costa"],
+        "1C": ["Daniela Oliveira", "Eduardo Costa"],
+        "2A": ["Ana Silva", "Bruno Souza", "Carlos Lima"],
+        "2B": ["Daniela Oliveira", "Eduardo Costa"],
+        "2C": ["Daniela Oliveira", "Eduardo Costa"],
+        "3A": ["Daniela Oliveira", "Eduardo Costa"],
+        "3B": ["Daniela Oliveira", "Eduardo Costa"],
+        "3C": ["Ana Silva", "Bruno Souza", "Carlos Lima"],
+        "6A": ["Daniela Oliveira", "Eduardo Costa"],
+        "6B": ["Daniela Oliveira", "Eduardo Costa"],
+        "6C": ["Fabio Jr", "Gabriel M.", "Helena R."],
+        "7A": ["Daniela Oliveira", "Eduardo Costa"],
+        "7B": ["Daniela Oliveira", "Eduardo Costa"],
+        "3B": ["Daniela Oliveira", "Eduardo Costa"],
+        "8A": ["Ana Silva", "Bruno Souza", "Carlos Lima"],
+        "8B": ["Daniela Oliveira", "Eduardo Costa"],
+        "9A": ["Daniela Oliveira", "Eduardo Costa"],
+        "9B": ["Fabio Jr", "Gabriel M.", "Helena R."],
+        "9C": ["Fabio Jr", "Gabriel M.", "Helena R."],
+        "
+        // Adicione todos os outros aqui seguindo o padrão "SALA": ["Nome", "Nome"]
+    };
 
-    // 2. Mostrar a data de hoje
-    document.getElementById('data-atual').innerText = new Date().toLocaleDateString('pt-BR');
+    let turmaAtual = "";
 
-    // 3. Função para renderizar a lista na tela
-    function renderizarAlunos() {
-        const container = document.getElementById('lista-alunos');
-        container.innerHTML = '';
-
-        alunos.forEach((aluno, index) => {
-            container.innerHTML += `
-                <div class="aluno-card">
-                    <span class="fw-bold">${aluno}</span>
-                    <div class="btn-group" role="group">
-                        <input type="radio" class="btn-check" name="status-${index}" id="p-${index}" value="P" checked>
-                        <label class="btn btn-outline-success" for="p-${index}">P</label>
-
-                        <input type="radio" class="btn-check" name="status-${index}" id="f-${index}" value="F">
-                        <label class="btn btn-outline-danger" for="f-${index}">F</label>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    // 4. Função para salvar os dados no navegador (localStorage)
-    function salvarChamada() {
-        const data = new Date().toLocaleDateString('pt-BR');
-        let registroHoje = [];
-
-        alunos.forEach((aluno, index) => {
-            const status = document.querySelector(`input[name="status-${index}"]:checked`).value;
-            registroHoje.push({ nome: aluno, status: status });
-        });
-
-        // Recupera o histórico já salvo ou cria um novo
-        let historico = JSON.parse(localStorage.getItem('historicoChamada')) || [];
-        historico.push({ data: data, registros: registroHoje });
-        
-        localStorage.setItem('historicoChamada', JSON.stringify(historico));
-        alert('Chamada de hoje salva com sucesso!');
-    }
-
-    function verRelatorio() {
-        let historico = JSON.parse(localStorage.getItem('historicoChamada')) || [];
-        if (historico.length === 0) {
-            alert("Nenhum registro encontrado.");
+    function trocarTurma() {
+        turmaAtual = document.getElementById('seletor-turma').value;
+        if (!turmaAtual) {
+            document.getElementById('area-chamada').style.display = 'none';
             return;
         }
 
-        let faltas = {};
-        alunos.forEach(a => faltas[a] = 0);
+        document.getElementById('area-chamada').style.display = 'block';
+        document.getElementById('titulo-turma').innerText = "Turma " + turmaAtual;
+        document.getElementById('data-hoje').innerText = new Date().toLocaleDateString('pt-BR');
+        
+        renderizarAlunos();
+    }
 
-        historico.forEach(dia => {
-            dia.registros.forEach(reg => {
-                if (reg.status === 'F') faltas[reg.nome]++;
+    function renderizarAlunos() {
+        const container = document.getElementById('lista-alunos');
+        container.innerHTML = '';
+        
+        // Se a turma não tiver nomes cadastrados ainda, mostra aviso
+        const lista = bancoDeDadosAlunos[turmaAtual] || ["Nenhum aluno cadastrado nesta sala"];
+
+        lista.forEach((aluno, index) => {
+            container.innerHTML += `
+                <div class="aluno-linha">
+                    <span>${aluno}</span>
+                    <div class="btn-group">
+                        <input type="radio" class="btn-check" name="status-${index}" id="p-${index}" value="P" checked>
+                        <label class="btn btn-outline-success" for="p-${index}">P</label>
+                        <input type="radio" class="btn-check" name="status-${index}" id="f-${index}" value="F">
+                        <label class="btn btn-outline-danger" for="f-${index}">F</label>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function salvarChamada() {
+        const data = new Date().toLocaleDateString('pt-BR');
+        const lista = bancoDeDadosAlunos[turmaAtual];
+        let registros = [];
+
+        lista.forEach((aluno, index) => {
+            const status = document.querySelector(`input[name="status-${index}"]:checked`).value;
+            registros.push({ nome: aluno, status: status });
+        });
+
+        let historico = JSON.parse(localStorage.getItem('historicoEscolar')) || [];
+        historico.push({ data: data, turma: turmaAtual, registros: registros });
+        
+        localStorage.setItem('historicoEscolar', JSON.stringify(historico));
+        alert(`Chamada da turma ${turmaAtual} salva!`);
+    }
+
+    function exportarCSV() {
+        let historico = JSON.parse(localStorage.getItem('historicoEscolar')) || [];
+        if(historico.length === 0) return alert("Sem dados para exportar");
+
+        let csvContent = "data:text/csv;charset=utf-8,Data;Turma;Aluno;Status\n";
+        
+        historico.forEach(sessao => {
+            sessao.registros.forEach(reg => {
+                csvContent += `${sessao.data};${sessao.turma};${reg.nome};${reg.status}\n`;
             });
         });
 
-        let mensagem = "Total de Faltas:\n";
-        for (let aluno in faltas) {
-            mensagem += `${aluno}: ${faltas[aluno]}\n`;
-        }
-        alert(mensagem);
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "chamada_escolar.csv");
+        document.body.appendChild(link);
+        link.click();
     }
 
-    // Iniciar a lista ao carregar a página
-    renderizarAlunos();
+    function limparDados() {
+        if(confirm("Deseja apagar TODO o histórico de chamadas?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
 </script>
 
 </body>
