@@ -14,6 +14,9 @@
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --danger-color: #ff4d4d;
             --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --info-color: #3498db;
+            --gray-color: #95a5a6;
         }
 
         body { 
@@ -37,38 +40,44 @@
             border-radius: 20px; 
             padding: 20px; 
             box-shadow: 0 15px 35px rgba(0,0,0,0.05); 
-            max-width: 500px; 
+            max-width: 600px; 
             margin: -40px auto 20px; 
         }
 
         .aluno-linha { 
             display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 12px 15px; 
+            flex-direction: column;
+            padding: 12px; 
             border-radius: 12px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             background: #fdfdfd;
             border: 1px solid #f1f1f1;
             transition: all 0.3s ease;
         }
 
-        /* Feedback visual quando marcado falta */
-        .aluno-linha.falta {
-            background: #fff5f5;
-            border-color: #feb2b2;
-        }
+        /* Cores específicas para cada status na linha */
+        .aluno-linha.falta { background: #fff5f5; border-color: #feb2b2; }
+        .aluno-linha.ncom { background: #fff9f0; border-color: #ffe3b3; }
+        .aluno-linha.at { background: #f0f7ff; border-color: #b3d7ff; }
 
-        .turma-badge { 
-            font-size: 0.9rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            color: #764ba2;
+        .nome-aluno {
+            font-size: 0.9rem;
             font-weight: 600;
+            margin-bottom: 8px;
+            color: #444;
         }
 
-        .btn-check:checked + .btn-outline-success { background-color: var(--success-color) !important; color: white; border-color: var(--success-color); }
-        .btn-check:checked + .btn-outline-danger { background-color: var(--danger-color) !important; color: white; border-color: var(--danger-color); }
+        /* Estilo para sala concluída no Select */
+        .sala-feita { background-color: #d4edda !important; color: #155724 !important; }
+
+        /* Customização dos botões de rádio */
+        .btn-group-sm .btn { font-size: 0.75rem; font-weight: 600; padding: 6px 4px; }
+        
+        .btn-check:checked + .btn-p { background-color: var(--success-color); color: white; border-color: var(--success-color); }
+        .btn-check:checked + .btn-f { background-color: var(--danger-color); color: white; border-color: var(--danger-color); }
+        .btn-check:checked + .btn-ncom { background-color: var(--warning-color); color: white; border-color: var(--warning-color); }
+        .btn-check:checked + .btn-at { background-color: var(--info-color); color: white; border-color: var(--info-color); }
+        .btn-check:checked + .btn-rem { background-color: var(--gray-color); color: white; border-color: var(--gray-color); }
 
         .btn-lg-custom {
             border-radius: 15px;
@@ -76,16 +85,7 @@
             font-weight: 600;
             transition: transform 0.2s;
         }
-        
-        .btn-lg-custom:active { transform: scale(0.95); }
 
-        .form-select-lg {
-            border-radius: 12px;
-            border: 2px solid #eee;
-            font-size: 1rem;
-        }
-
-        /* Esconder barra de rolagem mas manter funcionalidade */
         ::-webkit-scrollbar { width: 0px; }
     </style>
 </head>
@@ -93,7 +93,7 @@
 
 <div class="header-app text-center">
     <h2 class="animate__animated animate__fadeInDown">Diário Digital</h2>
-    <p class="opacity-75">Controle de Presença Inteligente</p>
+    <p class="opacity-75">Chamada & Ocorrências</p>
 </div>
 
 <div class="container">
@@ -102,12 +102,12 @@
             <label class="form-label fw-bold text-muted small">TURMA ATUAL</label>
             <select id="seletor-turma" class="form-select form-select-lg shadow-sm" onchange="trocarTurma()">
                 <option value="">Selecione uma sala...</option>
-                <optgroup label="Ensino Médio">
+                <optgroup label="Ensino Médio" id="group-medio">
                     <option value="1A">1A</option><option value="1B">1B</option><option value="1C">1C</option><option value="1D">1D</option>
                     <option value="2A">2A</option><option value="2B">2B</option><option value="2C">2C</option>
                     <option value="3A">3A</option><option value="3B">3B</option><option value="3C">3C</option>
                 </optgroup>
-                <optgroup label="Ensino Fundamental">
+                <optgroup label="Ensino Fundamental" id="group-fundamental">
                     <option value="6A">6A</option><option value="6B">6B</option><option value="6C">6C</option>
                     <option value="7A">7A</option><option value="7B">7B</option>
                     <option value="8A">8A</option><option value="8B">8B</option>
@@ -118,14 +118,14 @@
 
         <div id="area-chamada" style="display:none;">
             <div class="d-flex justify-content-between align-items-center mb-3 px-1">
-                <span class="turma-badge" id="titulo-turma"></span>
-                <span id="data-hoje" class="text-muted small"></span>
+                <span class="fw-bold text-primary" id="titulo-turma"></span>
+                <span id="data-hoje" class="badge bg-light text-dark"></span>
             </div>
             
             <div id="lista-alunos" class="animate__animated animate__fadeInUp"></div>
 
             <div class="d-grid gap-2 mt-4">
-                <button class="btn btn-success btn-lg-custom shadow animate__animated animate__pulse animate__infinite" onclick="salvarChamada()">
+                <button id="btn-salvar" class="btn btn-success btn-lg-custom shadow animate__animated animate__pulse animate__infinite" onclick="salvarChamada()">
                     ✅ Salvar Chamada
                 </button>
             </div>
@@ -134,18 +134,18 @@
         <div class="mt-5 pt-3 border-top">
             <div class="d-grid gap-2">
                 <button class="btn btn-primary btn-lg-custom shadow-sm" onclick="exportarExcelCompleto()">
-                    📥 Exportar Relatório Diário (.xlsx)
+                    📥 Exportar Excel Completo
                 </button>
-                <button class="btn btn-link btn-sm text-danger mt-2" onclick="limparTudo()">Apagar registros locais</button>
+                <button class="btn btn-link btn-sm text-danger mt-2" onclick="limparTudo()">Limpar todos os dados</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // [O BANCO DE DADOS SEGUE O MESMO QUE VOCÊ JÁ TEM]
+    // LISTA COMPLETA DOS ALUNOS
     const bancoDeDadosAlunos = {
-  "1A": ["AGATHA SOUZA MATOS", "ANA JULIA CONCEIÇÃO SALES", "ANA LIVIA SABINO SANTOS", "ANNA CLARA BARBOSA MANOEL", "BEATRIZ CALDANI COELHO", "CAUÃ RARES DI DONATO RIBEIRO", "DIEGO APARECIDO RODRIGUES PINTO", "EDUARDA DE SOUZA FERREIRA", "ELISA DA SILVA PAIXAO", "ENZO RIBEIRO NAGAI", "GABRIELLY VITORIA DOS SANTOS PEREIRA", "ISABELLY VITORIA RIBEIRO DE MIRANDA", "ITALO MIGUEL DE JESUS PRADO", "JOAO VITOR DE LIMA MACEDO", "JULIO CESAR SANTOS DO NASCIMENTO", "KAIQUE GUSTAVO RODRIGUES CARAÇA", "KAUAN VICENT FRANCO CAVINATTI", "KEYMILLY GABRIELLE RODRIGUES DA COSTA", "KIMBERLY ALVES MENINO", "LARA FERNANDES SANTOS", "LUIS EDUARDO LEOCADIO SILVA", "LUIZ MIGUEL SANTOS MARIANO BARBOSA", "MANUELLA MELO DE SOUZA", "MANUELLY VITÓRIA NUNES CARAÇA", "MICHAELA LAVÍNIA MENEZES DE SOUSA", "MICHEL PIRES FERREIRA", "MIKAELLY MILLIAN DE JESUS BOM SUCESSO DE MORAES", "MONIK VITÓRIA CASSUTI FERREIRA", "NAYARA SOUZA PINHEIRO", "NICOLE HADASSA SANTOS ROSEMBERG", "NICOLLAS RAPHAEL DE SOUZA", "RAQUEL DOS SANTOS", "ROSÂNGELA FERREIRA DE OLIVEIRA", "SOPHIA MIYUKI DA SILVA CARAÇA MISHIMA", "SURIH ALVES GONÇALVES ANTONIO", "THAYLA LAVINIA QUEIROZ ALVES", "VICTOR GABRIEL RODRIGUES", "VINICIUS HENRIQUE SILVA DA CUNHA", "VITOR DOS SANTOS MARIANO", "YAGO RODRIGUES DA SILVA"],
+        "1A": ["AGATHA SOUZA MATOS", "ANA JULIA CONCEIÇÃO SALES", "ANA LIVIA SABINO SANTOS", "ANNA CLARA BARBOSA MANOEL", "BEATRIZ CALDANI COELHO", "CAUÃ RARES DI DONATO RIBEIRO", "DIEGO APARECIDO RODRIGUES PINTO", "EDUARDA DE SOUZA FERREIRA", "ELISA DA SILVA PAIXAO", "ENZO RIBEIRO NAGAI", "GABRIELLY VITORIA DOS SANTOS PEREIRA", "ISABELLY VITORIA RIBEIRO DE MIRANDA", "ITALO MIGUEL DE JESUS PRADO", "JOAO VITOR DE LIMA MACEDO", "JULIO CESAR SANTOS DO NASCIMENTO", "KAIQUE GUSTAVO RODRIGUES CARAÇA", "KAUAN VICENT FRANCO CAVINATTI", "KEYMILLY GABRIELLE RODRIGUES DA COSTA", "KIMBERLY ALVES MENINO", "LARA FERNANDES SANTOS", "LUIS EDUARDO LEOCADIO SILVA", "LUIZ MIGUEL SANTOS MARIANO BARBOSA", "MANUELLA MELO DE SOUZA", "MANUELLY VITÓRIA NUNES CARAÇA", "MICHAELA LAVÍNIA MENEZES DE SOUSA", "MICHEL PIRES FERREIRA", "MIKAELLY MILLIAN DE JESUS BOM SUCESSO DE MORAES", "MONIK VITÓRIA CASSUTI FERREIRA", "NAYARA SOUZA PINHEIRO", "NICOLE HADASSA SANTOS ROSEMBERG", "NICOLLAS RAPHAEL DE SOUZA", "RAQUEL DOS SANTOS", "ROSÂNGELA FERREIRA DE OLIVEIRA", "SOPHIA MIYUKI DA SILVA CARAÇA MISHIMA", "SURIH ALVES GONÇALVES ANTONIO", "THAYLA LAVINIA QUEIROZ ALVES", "VICTOR GABRIEL RODRIGUES", "VINICIUS HENRIQUE SILVA DA CUNHA", "VITOR DOS SANTOS MARIANO", "YAGO RODRIGUES DA SILVA"],
         "1B": ["ANA BEATRIZ IZIDORO BORGES", "ANA BEATRIZ SPESSOTTI DA SILVA", "ANA JULIA DA SILVA BARBOSA", "ANTHONY JUNIOR BUENO DE SOUZA", "BRYAN HENRIQUE ALVES DA CUNHA", "CARLOS HENRIQUE RODRIGUES DE MOURA", "EMANOELLA PAIXÃO DOMENEGHETTI", "EMILLY GODOI EVANGELISTA", "EMILY DE SOUZA FIRIGATO", "ESHILEI TIFANI FERNANDES SOUSA", "GABRIEL HENRIQUE SANTOS DA SILVA", "GABRIEL MACHADO BARBOSA", "HADASSA CRISTINA TEODORO DA SILVA", "HELENA FREIRE ANDRADE", "INGRID APARECIDO PERCILIANO", "ISABELLY MACHADO VALINHOS", "LAIS APARECIDA DA COSTA", "LAVINIA DOS SANTOS BARBOSA", "LIZANDRO MACENA DA CONCEIÇÃO", "MARIA EDUARDA DE ANDRADE SILVA", "MARIA ISABEL SOUZA ROCHA", "MARIA LAURA FLORENCIO DO NASCIMENTO", "MARISA BARBOSA ROZARIO", "MATEUS CAVALCANTE ALVES", "MELISSA DOS SANTOS SOUZA", "NATALY ALVES DE LIMA", "NYCOLLAS MARINHO DA CRUZ", "OLAVO GABRIEL PREVIATTI SIQUEIRA", "PEDRO HENRIQUE RAMOS DE MELO SILVA", "RAQUEL MARIA RODRIGUES", "SAMUEL MENDES PINTO SILVA DE MORAES", "SAMYA TAVARES CUNHA DE ARRUDA", "VITOR GABRIEL FRANCELINO ALMEIDA", "VITOR YUDI HIRA", "VITORIA VITURINO DE LIMA", "YASMIN FERREIRA DE ALMEIDA", "YASMIN GABRIELLY JAQUER GOMES", "ENZO DE OLIVEIRA PIRES", "EDUARDO SANTANA ALVES", "HENRIQUE PRATA BASTOS"],
         "1C": ["ANA LUIZA DE PAULA OLIVEIRA", "ARTHUR RAMIRO GUIMARÃES DOS PASSOS", "BRAYAN PEREIRA ZANCHETTA", "DIOGO GABRIEL GILMAR DA SILVA", "EMANUELLE AMERICO VELHO BARBOSA", "ENZO JOAQUIM RODRIGUES BLAYA", "GABRIEL LUIZ LIMA", "GIULIA VICTÓRIA DA COSTA ALVES", "GUILHERME BARBOSA RODRIGUES", "GUSTAVO HENRIQUE DO PRADO CAMPOS", "HADASSA BARBOSA DOS SANTOS BASILIO", "ISAAC TEODORO LOPES", "JOÃO MIGUEL SOARES DOS SANTOS", "JÚLIA NUNES NASCIMENTO", "JUNIOR NUNES DE CAMPOS", "KAUÃ DOS OUROS OLIVEIRA", "LARA RAFAELLE CAMARGO", "LED HENRIQUE MELO E PENTEADO", "LUANA VICTORIA SILVA DE MOURA", "LUIZ FERNANDO DA SILVA RODRIGUES", "MARIA EDUARDA APARECIDA DE SOUZA", "MARIA EDUARDA DE OLIVEIRA SANTOS FERREIRA", "MARIANA CARAÇA JÁCOMO DE SOUZA", "MARIANA RIBEIRO CONSTANTINO DOS SANTOS GOMES", "MATEUS LUDGERO DE OLIVEIRA", "MATHEUS APARECIDO BENTO", "MATHEUS WALDIR ALVES CHOQUE", "MIGUEL AUGUSTO BARBOSA RODRIGUES", "MURILO HENRIQUE DOS SANTOS SILVA", "PAULO HENRIQUE BONETI MONTEIRO", "PEDRO SEMEÃO DOS SANTOS SILVA", "PEDRO ZAPPAROLI FARIAS", "RAFAEL DOS SANTOS PRADO", "RICHARD PIRES DE AMORIM", "RONALDO SANTOS BONZON", "SAMYRA VITORIA GARCIA DE MORAIS", "STEFANY SCHORALICK CARLOS", "THIAGO DANIEL SILVA DE TOLEDO", "VITOR DE OLIVEIRA VASCONCELOS FELICIO", "VITOR ITHIRO TOKUNAGA"],
         "1D": ["ANA CLARA MOURA CRISPIM ARIB FERREIRA", "BARTOLOMEU CESAR EDUARDO OLIVEIRA", "DANIEL SILVEIRA DE BARROS", "ELOAH PIETRA FARIAS DA SILVA", "ENZO FRANKLIN PIRES", "FELIPE CARAÇA BARBOSA", "GABRIEL DA ROCHA SIMÃO", "GABRIELLY APARECIDA BUENO LEITE", "GABRIELLY OLIVEIRA DOS SANTOS", "GIOVANE BUENO DE OLIVEIRA", "GUILHERME AUGUSTO RODRIGUES GOUVÊA", "GUSTAVO DE ARAÚJO CAMARGO", "HELOÍSA GONÇALVES DINIZ", "ISABEL DA SILVA PEREIRA", "ISABELLE DO PRADO CAVALCANTE", "ISABELLY RODRIGUES DA SILVA", "ISADORA LOBO", "JHONNATA WILLYAN BARRETO DUARTE", "KAROLLAYNE VITORIA LOURENCO DA SILVA", "KAUA RODRIGUES DAS NEVES", "KAUAN LARA DE OLIVEIRA", "KAUÊ ALVES SANTANA DE QUELUZ", "LARA FRANCINI SOARES MORAES", "LEONARDO RIBEIRO LIMA", "LETICIA ANJOS DA SILVA", "LORENA CRISTINA DE OLIVEIRA BARBOSA", "LUCAS MACHADO PEREIRA", "LUCAS SOUZA BEZERRA", "LUIGI GALBIATI SILVESTRE", "MARCELA FILHA PEREIRA MOURÃO", "MARCELA PAIOTI DA SILVA", "MARIA VITORIA SPESSOTTI LEITE", "MIGUEL DA SILVA SANTOS", "MIGUEL DE PAULO ROCHA", "PAULO SERGIO BORGES", "PEDRO HENRIQUE VILHENA SILVA", "PIETRO ALVES MARQUES", "SARAH AZEVEDO DA SILVA", "SINALDO SILVA DA CONCEIÇÃO", "YGOR LIMA ALVES"],
@@ -153,7 +153,7 @@
         "2B": ["ANA BEATRIZ BATISTA VALINHOS", "ANA BEATRIZ DE LIMA NUNES", "ANNA JULIA OLIVEIRA SILVA", "ARTHUR VIEIRA SANTOS", "BIANCA DE SOUZA ARAUJO", "BRENA HAVILA SOUZA DAINESI", "BRYAN OLIVEIRA RODRIGUES", "CALÍOPE RAMOS FERNANDES", "CLAYTON CLÉBER SOUZA DE GODOI", "DANILO MENDONÇA DOS SANTOS", "EMILY SOUSA BARBOSA", "ENZO HENRIQUE SOUZA DE AZEVEDO", "ESTER DE JESUS RAMOS", "ÉVELIN BACCARO DA SILVA", "GABRIEL LIMA DA CRUZ", "GABRIELLY RODRIGUES SILVA", "GUILHERME SOUZA ALMEIDA", "GUILHERMY DE SOUZA SANTOS", "ISABELA BARBOSA", "ISABELLA VITÓRIA DA SILVA MACIEL", "ISABELLE RODRIGUES CAJANO", "JÚLIA MICAELLA DE OLIVEIRA", "KAIQUE ALVES LUCAS", "KAUÃ NUNES DA SILVA", "KAYQUE RAMALHO DE SOUSA", "LARISSA BIANCHINI NASCIMENTO", "LAVÍNIA LIMA ANTUNES MONTARROIOS", "LUIZ GUSTAVO DE CARVALHO SILVA", "MARIA CLARA DE AGUIAR MACHADO", "MARIA EDUARDA DE LIMA NUNES", "MARIA EDUARDA SANTOS DA SILVA", "MICAEL VITOR ROQUE DA SILVA", "MIKAELLEM APARECIDA DOS SANTOS BARBOSA", "NICOLAS EDUARDO FERNANDES DE ABREU", "NICOLI LIMA BALBINO", "OTÁVIO AUGUSTO ANTÔNIO DA ROCHA SANTOS", "RAFAEL ALVES DOS REIS", "RAFAEL DIAS PEDROSO", "YASMIN DE SOUSA PESTANA", "YASMIN LOURENÇO REIS DA SILVA"],
         "2C": ["AMAURI SANTOS DE OLIVEIRA", "ANA CAROLINA ORTIZ DE ARAUJO PINTO", "ANTONIO GABRIEL RODRIGUES DA SILVA", "BRUNO MUNHOZ MARÇAL", "CACIANO RAMILO DOMINGOS", "DANIEL FABRICIO DOS SANTOS LEITE", "DOMENIC ANDERSON IRIARTE CALLEGARI", "ENZO GABRIEL MACHADO RODRIGUES SANTOS", "ENZO VEIGA SILVA", "ESTEFANY GONÇALVES DE OLIVEIRA", "EVERTHON GABRIEL SILVA AMARO", "GABRIEL MARCOS MAGALHÃES", "GUILHERME OLIVEIRA DE FRANÇA", "GUSTAVO NERY DOS SANTOS", "HELOÍSA MONTEIRO DOS SANTOS", "HENZO GABRIEL ALVES DE QUELUZ", "ISAAC PRIANTI VIANA", "JOÃO CARLOS ALEXANDRE FELIPE", "JÚLYA VITÓRIA SARAIVA DE PAULA", "JUNIOR RUBENS ALVES MARTINS", "KAUÃ REIS MARQUES DO PRADO", "KAUAN GUILHERME DE SOUZA PEREIRA", "LARISSA DE OLIVEIRA DA SILVA", "LAYWANNE CORREIA LINS", "LEONEL HENRIQUE FERREIRA PIRES", "LORRANE SOARES LOPES", "LUCAS MARTINS SILVA", "LUCIANA ALVES DE ABREU", "LUIGI DONIZETE CAMARGO PIRES", "MARIANA PEREIRA RODRIGUES", "MARINA FIRMO ALVARENGA DE MELO SANTOS", "MATHEUS RHAUAN MACEDO DA SILVA", "MONIQUE LOURENÇO ROCHA", "NARA VICTORIA MATULIONES DA SILVA RODRIGUES", "PAOLA CARVALHO DE SAMPAIO", "PEDRO HENRIQUE DE ALMEIDA SOUZA", "PEDRO HENRIQUE SANTANA DE PAULA", "SARA DOS PRAZERES GODOY", "VINÍCIUS MORAIS DE SOUSA", "VITOR MANOEL DOS SANTOS"],
         "3A": ["ALINE MIRANDA SABINO", "ANDRÉ LUIS DO PRADO SILVA", "ANNA CAROLINA RODRIGUES SILVA", "ARTHUR LUÍS DA SILVA", "BRUNA SILVA LEITE", "CAUÃ RIBEIRO DE SOUZA", "DANIEL WILLIAN SANTOS PEREIRA", "DIOGO GUTIERE BENITE NETO", "FABIANA ELOÁ APARECIDA MONTEIRO DA SILVA", "GIOVANNA CARAÇA DOS ANJOS", "GUILHERME DIAS DE SOUZA", "HANNA GIULIA MIGOTTO", "JENYFER LUCIA DO PRADO", "JÉSSICA SENA DA COSTA", "JOSÉ GUSTAVO THEODORO RAMOS SILVA", "JUNIOR GABRIEL RIBEIRO DE SOUZA", "KENZO MONSÃO REBELO ROCHA", "LARA MAIA OTAVIANO", "LILYAN FERREIRA DA CUNHA", "LUAN ISAC COSTA AVELINO", "LUANA CAMPOS MOURA", "LUIZ ENRIQUE OLIVEIRA DE PAULA", "LUIZ OTAVIO SOARES DO PRADO", "MARIA EDUARDA DE SOUZA", "MARIA EDUARDA SILVA DE AVILA", "MARIANA LUÍSA PEREIRA", "MATEUS MARQUES DOS SANTOS", "MATHEUS FIGUEIREDO DOS SANTOS", "MATHEUS RODRIGUES BANDEIRA", "MIKAÉLE KELEN DE JESUS CARVALHO", "NAOMI MISHIMA MECHI", "NATHAN DA SILVA CARAÇA", "RAYLANE NOBRE DOS SANTOS", "ROGER DE LIMA TEIXEIRA", "YASMIN GABRIELLY MARQUES COSTA"],
-        "3B": ["ANA JÚLIA DOS SANTOS PIRES", "ANA LIA CAMARGO DE SOUZA", "ANDRESSA MELO FERREIRA", "ANNA JÚLIA SUIANE CARDOSO DA SILVA", "DAVI DE CASTRO BARRETO", "GABRIEL GALDINO MORGADO DE ARAUJO", "GUILHERME VIEIRA DE JESUS", "GUSTAVO SANTOS PEREIRA", "HILLARY HANNA MACEDO DA SILVA", "KATHLEEN VITÓRIA PERCILIANO GOMES", "KAUANE NUNES DE PAIVA", "KETLLEN RAKELLY DA SILVA", "LARA BEATRIZ MORAIS DOS SANTOS", "LUCAS DE QUELUZ MIRANDA", "MARCOS SOUZA DE JESUS", "MARYANE SANTOS OLIVARES", "MATEUS DOS SANTOS DO NASCIMENTO", "MELQUISEDEQUE BARBOSA DOS SANTOS BASILIO", "MILENA FERNANDES DA SILVA", "NATHÁLYA PONCIANO RODRIGUES VIEIRA", "NATIELE PEREIRA MOURÃO", "NICOLLY SCHORALICK CARLOS", "NICOLY DE MORAIS MOTA", "PEDRO MIGUEL DE OLIVEIRA", "RAFAELA KAORI SOUZA KITSUWA", "RAQUEL VITÓRIA PEREIRA RODRIGUES", "TAINÁ PRADO MENDES", "VICTOR GABRIEL SANTANA MARQUES", "VITOR HUGO MARQUES DE MORAIS", "VITÓRIA DA SILVA DE MORAES", "VITORIA DOS SANTOS MIRANDA", "YAGO ALVES OLIVEIRA"],
+        "3B": ["ANA JÚLIA DOS SANTOS PIRES", "ANA LIA CAMARGO DE SOUZA", "ANDRESSA MELO FERREIRA", "ANNA JÚLIA SUIANE CARDOSO DA SILVA", "DAVI DE CASTRO BARRETO", "GABRIEL GALDINO MORGADO DE ARAUJO", "GUILHERME VIEIRA DE JESUS", "GUSTAVO SANTOS PEREIRA", "HILLARY HANNA MACEDO DA SILVA", "KATHLEEN VITÓRIA PERCILIANO GOMES", "KAUANE NUNES DE PAIVA", "KETLLEN RAKELLY DA SILVA", "LARA BEATRIZ MORAIS DOS SANTOS", "LUCAS de QUELUZ MIRANDA", "MARCOS SOUZA DE JESUS", "MARYANE SANTOS OLIVARES", "MATEUS DOS SANTOS DO NASCIMENTO", "MELQUISEDEQUE BARBOSA DOS SANTOS BASILIO", "MILENA FERNANDES DA SILVA", "NATHÁLYA PONCIANO RODRIGUES VIEIRA", "NATIELE PEREIRA MOURÃO", "NICOLLY SCHORALICK CARLOS", "NICOLY DE MORAIS MOTA", "PEDRO MIGUEL DE OLIVEIRA", "RAFAELA KAORI SOUZA KITSUWA", "RAQUEL VITÓRIA PEREIRA RODRIGUES", "TAINÁ PRADO MENDES", "VICTOR GABRIEL SANTANA MARQUES", "VITOR HUGO MARQUES DE MORAIS", "VITÓRIA DA SILVA DE MORAES", "VITORIA DOS SANTOS MIRANDA", "YAGO ALVES OLIVEIRA"],
         "3C": ["ALEX MENZANI DOMENECH", "ANA LUIZA MOURA CRISPIM ARIB PINHEIRO", "ANA SARAH BEZERRA CAMPOS", "BRUNA DOS PRAZERES SOARES", "CAMILLY VITÓRIA SANTOS PINTO", "CAROLAINE SANTOS DE JESUS", "CAROLINA JESUS DE LIMONI", "DANIEL APARECIDO BARBOSA", "DANIEL RAMOS FILHO", "EVERSON RUAN GODOI DOS SANTOS", "GABRIELI FERREIRA Soares", "GISLAIANE MACEDO VIEIRA", "GRACE PERCILIANO DA SILVA", "GUSTAVO HENRIQUE SANTANA BARBOSA", "GUSTAVO SILVA REIS", "HELOISA RAQUEL ARAÚJO FONSECA", "JHULIA VICTÓRIA GASSI", "JOÃO LUCAS SARAIVA DOS SANTOS", "KAUAN DIEGO DOS SANTOS ROCHA", "KAUAN JIBAN BEZERRA DA SILVA", "LUCAS GABRIEL VALINHOS ALVES", "LUIZ FELIPE NASCIMENTO DE OLIVEIRA", "LUIZ GUSTAVO COSTA CARDOSO", "MANUELA KETLYN LIMA ARAUJO", "MARIA EDUARDA VANDERLEI DOS SANTOS", "MARIANA SALIM DOS SANTOS", "MICAÉLA CASSIANE DE CAMPOS ALVES", "NICOLAS FRIZO", "PIETRA PALHEIRO ALVES FERREIRA", "RAFAEL SILVA BERTOLIN", "RAFAELA MIRANDA DE SOUZA", "RAFAELA VITÓRIA CONCEIÇÃO ROCHA", "RAYSSA KAYANE CARDOSO DA SILVA", "RYCHARD KAUÊ DA SILVA", "STEFANY CRISTINE ARAÚJO DA COSTA", "STEFANY SOARES BUENO ALVES", "VINÍCIUS RADAMÊS SOARES CAVALCANTI", "VINICIUS SILVESTRE DE FARIA", "YGOR VINICIUS BARBOSA ALVES", "GEOVANNA GABRIELI FELIPE ALEXANDRE"],
         "6A": ["ANA CLARA DIAS PEREIRA", "ANNA JULIA CAMARGO SOARES", "BRENO LIMA DA SILVA", "BRYAN GABRIEL CANDIDO DE JESUS", "DAVI GABRIEL PEREIRA DA SILVA", "EMANUEL ALVES DE OLIVEIRA", "ENZO GABRIEL BARBOSA", "FELIPE AUGUSTO FERNANDES", "GABRIEL HENRIQUE ALMEIDA", "GIOVANNA VITÓRIA DOS SANTOS", "GUILHERME CARVALHO DE SOUZA", "GUSTAVO HENRIQUE RODRIGUES", "HELENA MARIA DA SILVA", "ISABELLY CRISTINA DE PAULA", "JOÃO MIGUEL ALVES DA SILVA", "KAIQUE RODRIGUES DOS SANTOS", "LARISSA EDUARDA SILVA", "LUCAS GABRIEL DE OLIVEIRA", "MANUELA VITÓRIA SANTOS", "MIGUEL AUGUSTO RODRIGUES", "NICOLLAS GABRIEL DE SOUZA", "PEDRO HENRIQUE SILVA", "RAFAEL DOS SANTOS PEREIRA", "SOPHIA VITÓRIA ALVES", "VICTOR GABRIEL SANTOS", "YASMIN GABRIELLY DE SOUZA"],
         "6B": ["ANA BEATRIZ DA SILVA", "ARTHUR GABRIEL RODRIGUES", "BEATRIZ VITÓRIA DOS SANTOS", "CAUÃ HENRIQUE DE OLIVEIRA", "DANIEL GABRIEL SILVA", "EDUARDO AUGUSTO DOS SANTOS", "ENZO HENRIQUE PEREIRA", "GABRIELLY CRISTINA SILVA", "GUSTAVO ALVES DE SOUZA", "HELOISA VITÓRIA RODRIGUES", "ISAAC GABRIEL DE PAULA", "ISABELLA MARIA SANTOS", "JOÃO VITOR ALMEIDA", "KAUAN GABRIEL DA SILVA", "LARA VITÓRIA DE OLIVEIRA", "LUCAS HENRIQUE SANTOS", "MARIA EDUARDA SILVA", "MIGUEL HENRIQUE RODRIGUES", "NICOLE VITÓRIA ALVES", "PEDRO VITOR DE SOUZA", "RAFAELA CRISTINA SANTOS", "SAMUEL GABRIEL SILVA", "THIAGO HENRIQUE OLIVEIRA", "VINICIUS GABRIEL SANTOS"],
@@ -162,11 +162,15 @@
         "7B": ["ALICE VITÓRIA DA SILVA", "ARTHUR VITOR RODRIGUES", "BRUNA CRISTINA SANTOS", "CARLOS HENRIQUE OLIVEIRA", "DANIEL VITOR DE SOUZA", "EMANUELLY VITÓRIA RODRIGUES", "FELIPE GABRIEL ALMEIDA", "GIOVANNA MARIA SANTOS", "GUILHERME VITOR PAULA", "HELENA CRISTINA ALVES", "ISAAC VITOR SILVA", "ISABELLY MARIA RODRIGUES", "JOÃO VITOR SANTOS", "KAUANE CRISTINA DE OLIVEIRA", "LAVINIA VITOR SILVA", "LUIZ VITOR ALMEIDA", "MARIA CLARA SANTOS", "MURILO VITOR SILVA", "NICOLLAS VITOR RODRIGUES", "PIETRO VITOR ALVES", "RAISSA CRISTINA SANTOS", "SOPHIA VITOR OLIVEIRA", "VICTOR VITOR SILVA"],
         "8A": ["ANA CLARA SILVA", "ARTHUR GABRIEL SANTOS", "BEATRIZ VITÓRIA OLIVEIRA", "CAUÃ VITOR DE SOUZA", "DAVI CRISTINA RODRIGUES", "EDUARDO GABRIEL ALMEIDA", "ENZO VITOR SANTOS", "GABRIEL CRISTINA PAULA", "GIOVANNA VITÓRIA ALVES", "GUSTAVO VITOR SILVA", "HELOISA CRISTINA RODRIGUES", "ISABELLA VITOR SANTOS", "JOÃO MIGUEL DE OLIVEIRA", "KAUAN VITOR SILVA", "LARA VITOR ALMEIDA", "LUCAS VITOR SANTOS", "MARIA EDUARDA SILVA", "MIGUEL VITOR RODRIGUES", "NICOLE VITOR ALVES", "PEDRO VITOR SANTOS", "RAFAELA CRISTINA OLIVEIRA", "SAMUEL VITOR SILVA", "VINICIUS VITOR RODRIGUES"],
         "8B": ["ANA BEATRIZ RODRIGUES", "ARTHUR VITOR SANTOS", "BRUNO CRISTINA OLIVEIRA", "CAMILLY VITOR DE SOUZA", "DANIEL CRISTINA RODRIGUES", "EMANUELLY GABRIEL ALMEIDA", "FELIPE VITOR SANTOS", "GABRIELLY CRISTINA PAULA", "GUILHERME VITÓRIA ALVES", "HELENA VITOR SILVA", "ISAAC CRISTINA RODRIGUES", "ISABELLY VITOR SANTOS", "JOÃO VITOR DE OLIVEIRA", "KAUANE VITOR SILVA", "LAVINIA VITOR ALMEIDA", "LUIZ VITOR SANTOS", "MARIA CLARA SILVA", "MURILO VITOR RODRIGUES", "NICOLLAS VITOR ALVES", "PIETRO VITOR SANTOS", "RAISSA CRISTINA OLIVEIRA", "SOPHIA VITOR SILVA", "YARA VITOR RODRIGUES"],
-        "9A": ["ADRIANO VITOR DA SILVA", "ANA LAURA RODRIGUES", "BEATRIZ VITOR SANTOS", "CAIO CRISTINA OLIVEIRA", "DAVI GABRIEL DE SOUZA", "EDUARDA CRISTINA RODRIGUES", "ENZO VITOR ALMEIDA", "GABRIEL VITOR SANTOS", "GIOVANNA CRISTINA PAULA", "GUSTAVO VITÓRIA ALVES", "HELOISA VITOR SILVA", "ISABELLA CRISTINA RODRIGUES", "JOÃO MIGUEL SANTOS", "KAUAN VITOR DE OLIVEIRA", "LARA VITOR SILVA", "LUCAS VITOR ALMEIDA", "MARIA EDUARDA SANTOS", "MIGUEL VITOR SILVA", "NICOLE VITOR RODRIGUES", "PEDRO VITOR ALVES", "RAFAEL CRISTINA SANTOS", "SAMUEL VITOR OLIVEIRA", "VINICIUS VITOR SILVA"],
+        "9A": ["ADRIANO VITOR DA SILVA", "ANA LAURA RODRIGUES", "BEATRIZ VITOR SANTOS", "CAIO CRISTINA OLIVEIRA", "DAVI GABRIEL de SOUZA", "EDUARDA CRISTINA RODRIGUES", "ENZO VITOR ALMEIDA", "GABRIEL VITOR SANTOS", "GIOVANNA CRISTINA PAULA", "GUSTAVO VITÓRIA ALVES", "HELOISA VITOR SILVA", "ISABELLA CRISTINA RODRIGUES", "JOÃO MIGUEL SANTOS", "KAUAN VITOR DE OLIVEIRA", "LARA VITOR SILVA", "LUCAS VITOR ALMEIDA", "MARIA EDUARDA SANTOS", "MIGUEL VITOR SILVA", "NICOLE VITOR RODRIGUES", "PEDRO VITOR ALVES", "RAFAEL CRISTINA SANTOS", "SAMUEL VITOR OLIVEIRA", "VINICIUS VITOR SILVA"],
         "9B": ["ALICE VITORIA RODRIGUES", "ARTHUR VITOR SANTOS", "BRUNA VITOR OLIVEIRA", "CARLOS CRISTINA DE SOUZA", "DANIEL GABRIEL RODRIGUES", "EMANUELLY CRISTINA ALMEIDA", "FELIPE VITOR SANTOS", "GIOVANNA VITOR PAULA", "GUILHERME CRISTINA ALVES", "HELENA VITÓRIA SILVA", "ISAAC VITOR RODRIGUES", "ISABELLY VITOR SANTOS", "JOÃO VITOR DE OLIVEIRA", "KAUANE VITOR SILVA", "LAVINIA VITOR ALMEIDA", "LUIZ VITOR SANTOS", "MARIA CLARA SILVA", "MURILO VITOR RODRIGUES", "NICOLLAS VITOR ALVES", "PIETRO VITOR SANTOS", "RAISSA CRISTINA OLIVEIRA", "SOPHIA VITOR SILVA", "VICTOR VITOR RODRIGUES"],
         "9C": ["ANA JULIA RODRIGUES", "ARTHUR VITOR SANTOS", "BRUNO VITOR OLIVEIRA", "CAMILLY CRISTINA DE SOUZA", "DAVI GABRIEL RODRIGUES", "EMANUELLY CRISTINA ALMEIDA", "FELIPE VITOR SANTOS", "GABRIEL VITOR PAULA", "GIOVANNA CRISTINA ALVES", "GUILHERME VITÓRIA SILVA", "HELOISA VITOR RODRIGUES", "ISABELLY VITOR SANTOS", "JOÃO GABRIEL DE OLIVEIRA", "KAUAN VITOR SILVA", "LARA VITOR ALMEIDA", "LUCAS VITOR SANTOS", "MARIA EDUARDA SILVA", "MIGUEL VITOR RODRIGUES", "NICOLE VITOR ALVES", "PEDRO VITOR SANTOS", "RAFAELA CRISTINA OLIVEIRA", "SOPHIA VITOR SILVA", "YARA VITOR RODRIGUES"]
-};
+    };
+
     let turmaAtual = "";
+
+    // Executa ao carregar para marcar salas concluídas
+    window.onload = atualizarCoresSelect;
 
     function trocarTurma() {
         turmaAtual = document.getElementById('seletor-turma').value;
@@ -175,14 +179,13 @@
             return;
         }
         
-        // Efeito visual ao trocar
         const area = document.getElementById('area-chamada');
         area.style.display = 'block';
         area.classList.remove('animate__fadeInUp');
-        void area.offsetWidth; // Reset animation
+        void area.offsetWidth;
         area.classList.add('animate__fadeInUp');
 
-        document.getElementById('titulo-turma').innerText = "📍 Sala " + turmaAtual;
+        document.getElementById('titulo-turma').innerText = "Sala " + turmaAtual;
         document.getElementById('data-hoje').innerText = new Date().toLocaleDateString('pt-BR');
         renderizarAlunos();
     }
@@ -197,13 +200,22 @@
             linha.className = 'aluno-linha';
             linha.id = `linha-${index}`;
             linha.innerHTML = `
-                <span class="fw-medium" style="font-size: 0.85rem; max-width: 60%;">${aluno}</span>
-                <div class="btn-group" role="group">
+                <span class="nome-aluno">${aluno}</span>
+                <div class="btn-group btn-group-sm" role="group">
                     <input type="radio" class="btn-check" name="status-${index}" id="p-${index}" value="P" checked onchange="marcarLinha(${index}, 'P')">
-                    <label class="btn btn-outline-success px-3" for="p-${index}">P</label>
+                    <label class="btn btn-outline-success btn-p" for="p-${index}">P</label>
                     
                     <input type="radio" class="btn-check" name="status-${index}" id="f-${index}" value="F" onchange="marcarLinha(${index}, 'F')">
-                    <label class="btn btn-outline-danger px-3" for="f-${index}">F</label>
+                    <label class="btn btn-outline-danger btn-f" for="f-${index}">F</label>
+
+                    <input type="radio" class="btn-check" name="status-${index}" id="ncom-${index}" value="NCOM" onchange="marcarLinha(${index}, 'NCOM')">
+                    <label class="btn btn-outline-warning btn-ncom" for="ncom-${index}">NCOM</label>
+
+                    <input type="radio" class="btn-check" name="status-${index}" id="at-${index}" value="AT" onchange="marcarLinha(${index}, 'AT')">
+                    <label class="btn btn-outline-info btn-at" for="at-${index}">AT</label>
+
+                    <input type="radio" class="btn-check" name="status-${index}" id="rem-${index}" value="REM" onchange="marcarLinha(${index}, 'REM')">
+                    <label class="btn btn-outline-secondary btn-rem" for="rem-${index}">REM</label>
                 </div>`;
             container.appendChild(linha);
         });
@@ -211,11 +223,10 @@
 
     function marcarLinha(idx, status) {
         const linha = document.getElementById(`linha-${idx}`);
-        if(status === 'F') {
-            linha.classList.add('falta');
-        } else {
-            linha.classList.remove('falta');
-        }
+        linha.classList.remove('falta', 'ncom', 'at');
+        if(status === 'F') linha.classList.add('falta');
+        if(status === 'NCOM') linha.classList.add('ncom');
+        if(status === 'AT') linha.classList.add('at');
     }
 
     function salvarChamada() {
@@ -234,24 +245,36 @@
 
         localStorage.setItem('chamada_v2', JSON.stringify(historicoGeral));
         
-        // Feedback de sucesso bonito
-        const btn = event.target;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "💾 SALVO!";
+        atualizarCoresSelect();
+
+        const btn = document.getElementById('btn-salvar');
+        btn.innerHTML = "💾 SALVO COM SUCESSO!";
         btn.classList.replace('btn-success', 'btn-dark');
         setTimeout(() => {
-            btn.innerHTML = originalText;
+            btn.innerHTML = "✅ Salvar Chamada";
             btn.classList.replace('btn-dark', 'btn-success');
         }, 2000);
+    }
+
+    function atualizarCoresSelect() {
+        const data = new Date().toLocaleDateString('pt-BR');
+        let historicoGeral = JSON.parse(localStorage.getItem('chamada_v2')) || {};
+        const turmasSalvas = historicoGeral[data] ? Object.keys(historicoGeral[data]) : [];
+        
+        const select = document.getElementById('seletor-turma');
+        for (let i = 0; i < select.options.length; i++) {
+            const opt = select.options[i];
+            if (turmasSalvas.includes(opt.value)) {
+                opt.classList.add('sala-feita');
+                if (!opt.text.includes('✅')) opt.text = "✅ " + opt.text;
+            }
+        }
     }
 
     function exportarExcelCompleto() {
         const dataHoje = new Date().toLocaleDateString('pt-BR');
         let historicoGeral = JSON.parse(localStorage.getItem('chamada_v2')) || {};
-        
-        if (!historicoGeral[dataHoje]) {
-            return alert("Nenhum dado salvo para hoje!");
-        }
+        if (!historicoGeral[dataHoje]) return alert("Nenhum dado para hoje!");
 
         const wb = XLSX.utils.book_new();
         Object.keys(historicoGeral[dataHoje]).forEach(turma => {
@@ -263,7 +286,7 @@
     }
 
     function limparTudo() {
-        if (confirm("Deseja apagar todos os dados do dispositivo?")) {
+        if (confirm("Apagar toda a memória? Isso não pode ser desfeito.")) {
             localStorage.clear();
             location.reload();
         }
